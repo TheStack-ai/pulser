@@ -5,7 +5,10 @@ import { classifySkill } from "./classifier.js";
 import { getActiveRules } from "./rules/index.js";
 import { generatePrescriptions, generateSystemPrescriptions } from "./prescriber.js";
 import { report } from "./reporter.js";
+import chalk from "chalk";
 import { PatientMonitor } from "./monitor/tui.js";
+import { previewFixes, applyFixes } from "./fixer.js";
+import { restoreBackup, listBackups } from "./backup.js";
 import type { CLIOptions, ScanResult, SkillReport, OutputFormat } from "./types.js";
 
 const VALID_FORMATS: OutputFormat[] = ["text", "json", "md"];
@@ -163,6 +166,48 @@ async function run(options: CLIOptions) {
 
   console.log(report(result, options.format));
 
+  // Phase 6: --fix auto-apply
+  if (options.fix && options.format === "text") {
+    const allRx = [
+      ...reports.flatMap((r) => r.prescriptions),
+      ...systemPrescriptions,
+    ];
+
+    const { fixable, manual } = previewFixes(allRx, skills);
+
+    if (fixable.length > 0) {
+      console.log("");
+      console.log(chalk.yellow(`  ${fixable.length} auto-fixable prescriptions found.`));
+      console.log(chalk.dim("  Applying fixes with backup..."));
+      console.log("");
+
+      const results = applyFixes(fixable, skills, expandHome(options.path));
+      const applied = results.filter((r) => r.applied);
+
+      for (const r of results) {
+        const icon = r.applied ? chalk.green("\u2713") : chalk.red("\u2717");
+        console.log(`  ${icon} ${r.skillName} [${r.rule}]`);
+        if (r.diff && r.diff !== "no change") {
+          for (const line of r.diff.split("\n")) {
+            if (line.startsWith("+")) {
+              console.log(chalk.green(`      ${line}`));
+            } else if (line.startsWith("-")) {
+              console.log(chalk.red(`      ${line}`));
+            }
+          }
+        }
+      }
+
+      console.log("");
+      console.log(`  ${chalk.green(`${applied.length} fixes applied`)}. Run ${chalk.cyan("npx pulser undo")} to rollback.`);
+    }
+
+    if (manual.length > 0) {
+      console.log("");
+      console.log(chalk.dim(`  ${manual.length} prescriptions require manual changes (see report above).`));
+    }
+  }
+
   // Exit code
   if (result.summary.errors > 0) process.exit(1);
   if (options.strict && result.summary.warnings > 0) process.exit(2);
@@ -179,6 +224,7 @@ program
   .option("--format <type>", "Output format: text, json, md", "text")
   .addHelpText("after", "\nFormats: text (default), json (CI), md (reports)")
   .option("--no-anim", "Disable TUI animation")
+  .option("--fix", "Auto-apply structural fixes (with backup)")
   .option("--strict", "Treat warnings as errors")
   .option("--all", "Include experimental rules")
   .action((path, opts) => {
@@ -194,7 +240,38 @@ program
       noAnim: !opts.anim,
       strict: opts.strict || false,
       all: opts.all || false,
+      fix: opts.fix || false,
     });
+  });
+
+program
+  .command("undo [timestamp]")
+  .description("Rollback the last --fix operation")
+  .option("--list", "Show all available backups")
+  .action((timestamp, opts) => {
+    if (opts.list) {
+      const backups = listBackups();
+      if (backups.length === 0) {
+        console.log("\n  No backups found.\n");
+        return;
+      }
+      console.log("\n  Available backups:\n");
+      for (const b of backups) {
+        console.log(`  ${chalk.cyan(b.timestamp)}  (${b.files.length} files)`);
+        for (const f of b.files) {
+          console.log(chalk.dim(`    ${f.skillName}/SKILL.md`));
+        }
+      }
+      console.log("");
+      return;
+    }
+
+    const result = restoreBackup(timestamp);
+    if (!result) {
+      console.log("\n  No backup found to restore.\n");
+      process.exit(1);
+    }
+    console.log(`\n  ${chalk.green(`Restored ${result.restored} files`)} from backup ${chalk.cyan(result.timestamp)}\n`);
   });
 
 program.parse();

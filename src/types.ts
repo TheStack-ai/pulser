@@ -92,4 +92,5 @@ export interface CLIOptions {
   noAnim: boolean;
   strict: boolean;
   all: boolean;
+  fix: boolean;
 }
