@@ -7,7 +7,7 @@ export const frontmatterRule: Rule = {
     const diagnostics: Diagnostic[] = [];
     const fm = skill.frontmatter;
 
-    if (!fm.name && !skill.dirName) {
+    if (!fm.name) {
       diagnostics.push({
         rule: "frontmatter",
         tier: "core",

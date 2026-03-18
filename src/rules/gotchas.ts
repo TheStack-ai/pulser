@@ -16,7 +16,7 @@ export const gotchasRule: Rule = {
       }];
     }
 
-    const gotchasMatch = skill.content.match(/^##\s+Gotchas\s*\n([\s\S]*?)(?=^##\s|$)/m);
+    const gotchasMatch = skill.content.match(/^##\s+Gotchas\s*\n([\s\S]*?)(?=\n##\s|$)/m);
     if (gotchasMatch) {
       const gotchasContent = gotchasMatch[1].trim();
       const hasNumberedItems = /^\d+\.\s/m.test(gotchasContent);

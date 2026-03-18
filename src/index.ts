@@ -5,7 +5,9 @@ import { classifySkill } from "./classifier.js";
 import { getActiveRules } from "./rules/index.js";
 import { generatePrescriptions, generateSystemPrescriptions } from "./prescriber.js";
 import { report } from "./reporter.js";
-import type { CLIOptions, ScanResult, SkillReport } from "./types.js";
+import type { CLIOptions, ScanResult, SkillReport, OutputFormat } from "./types.js";
+
+const VALID_FORMATS: OutputFormat[] = ["text", "json", "md"];
 
 const DEFAULT_SKILLS_PATH = "~/.claude/skills";
 const DEFAULT_SETTINGS_PATH = "~/.claude/settings.json";
@@ -20,7 +22,8 @@ function expandHome(p: string): string {
 function calculateScore(reports: SkillReport[]): number {
   if (reports.length === 0) return 100;
 
-  const rulesPerSkill = 6; // 6 per-skill rules
+  const { skillRules } = getActiveRules(false);
+  const rulesPerSkill = skillRules.length;
   const totalRules = reports.length * rulesPerSkill;
   let passed = 0;
 
@@ -104,14 +107,20 @@ program
   .argument("[path]", "Path to skills directory", DEFAULT_SKILLS_PATH)
   .option("--skill <name>", "Scan a single skill by name")
   .option("--format <type>", "Output format: text, json, md", "text")
+  .addHelpText("after", "\nFormats: text (default), json (CI), md (reports)")
   .option("--no-anim", "Disable TUI animation")
   .option("--strict", "Treat warnings as errors")
   .option("--all", "Include experimental rules")
   .action((path, opts) => {
+    const fmt = opts.format as OutputFormat;
+    if (!VALID_FORMATS.includes(fmt)) {
+      console.error(`  Error: invalid format "${fmt}". Use: text, json, md`);
+      process.exit(1);
+    }
     run({
       path: path || DEFAULT_SKILLS_PATH,
       skill: opts.skill,
-      format: opts.format,
+      format: fmt,
       noAnim: !opts.anim,
       strict: opts.strict || false,
       all: opts.all || false,
