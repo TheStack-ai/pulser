@@ -167,7 +167,7 @@ async function run(options: CLIOptions) {
   // Non-text formats: dump and exit
   if (options.format !== "text") {
     console.log(report(result, options.format, true));
-    if (result.summary.errors > 0) process.exit(1);
+    if (options.strict && result.summary.errors > 0) process.exit(1);
     return;
   }
 
@@ -179,7 +179,7 @@ async function run(options: CLIOptions) {
     if (options.fix) {
       await runFix(result, skills, options);
     }
-    if (result.summary.errors > 0) process.exit(1);
+    if (options.strict && result.summary.errors > 0) process.exit(1);
     if (options.strict && result.summary.warnings > 0) process.exit(2);
     return;
   }
@@ -221,7 +221,7 @@ async function run(options: CLIOptions) {
       break;
   }
 
-  if (result.summary.errors > 0) process.exit(1);
+  if (options.strict && result.summary.errors > 0) process.exit(1);
   if (options.strict && result.summary.warnings > 0) process.exit(2);
 }
 
