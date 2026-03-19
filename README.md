@@ -4,7 +4,11 @@
   <img src="docs/banner.svg" alt="pulser — Diagnose. Prescribe. Fix." width="100%">
 </p>
 
-**'스킬 점검해줘' 한 마디.** Claude Code 대화 안에서 진단, 분류, 처방, 수정까지 끝납니다.
+<p align="center">
+  <a href="https://www.npmjs.com/package/pulser-cli"><img src="https://img.shields.io/npm/v/pulser-cli?color=10b981" alt="npm"></a>
+  <a href="https://github.com/whynowlab/pulser/blob/main/LICENSE"><img src="https://img.shields.io/github/license/whynowlab/pulser" alt="license"></a>
+  <a href="./README.ko.md">한국어</a>
+</p>
 
 "Check my skills." Diagnose, classify, prescribe, and fix — without leaving the conversation.
 
@@ -33,7 +37,7 @@ $ pulser
 
 ## What it does
 
-pulser scans your `SKILL.md` files against **8 diagnostic rules** derived from Anthropic's published principles in ["Building Claude Code: How We Use Skills"](https://code.claude.com/docs/en/skills):
+pulser scans your `SKILL.md` files against 8 diagnostic rules derived from Anthropic's published principles in ["Building Claude Code: How We Use Skills"](https://code.claude.com/docs/en/skills):
 
 | Rule | What it checks |
 |------|---------------|
@@ -46,7 +50,7 @@ pulser scans your `SKILL.md` files against **8 diagnostic rules** derived from A
 | `conflicts` | Trigger keyword overlap between skills |
 | `usage-hooks` | Skill usage logging hook installed |
 
-Each skill is **auto-classified** by type (analysis, research, generation, execution, reference) with confidence scoring. Prescriptions are tailored to the detected type.
+Each skill is auto-classified by type (analysis, research, generation, execution, reference) with confidence scoring. Prescriptions are tailored to the detected type.
 
 ## Install
 
@@ -54,7 +58,7 @@ Each skill is **auto-classified** by type (analysis, research, generation, execu
 npm install -g pulser-cli
 ```
 
-On install, pulser registers itself as a Claude Code skill — say **"스킬 점검해줘"** or **"/pulser"** to run it conversationally.
+On install, pulser registers itself as a Claude Code skill — say "check my skills" or `/pulser` to run it conversationally.
 
 ## Usage
 
@@ -63,7 +67,7 @@ On install, pulser registers itself as a Claude Code skill — say **"스킬 점
 Just say it:
 
 ```
-스킬 점검해줘
+check my skills
 ```
 
 Or use the slash command:
@@ -107,10 +111,10 @@ pulser --no-anim
 
 ## Core Pipeline
 
-1. **Diagnose** — Scan and classify issues across 8 rules
-2. **Prescribe** — Explain why it matters, provide ready-to-use templates
-3. **Fix** — Auto-apply safe structural fixes with full backup
-4. **Rollback** — Instant undo, your safety net
+1. Diagnose — Scan and classify issues across 8 rules
+2. Prescribe — Explain why it matters, provide ready-to-use templates
+3. Fix — Auto-apply safe structural fixes with full backup
+4. Rollback — Instant undo, your safety net
 
 ## Exit Codes
 
@@ -124,10 +128,10 @@ pulser --no-anim
 
 When running in a TTY terminal, pulser displays a hospital-style patient monitor with real-time waveform animation:
 
-- **Green ECG** — Skills being scanned
-- **Green capnography** — Pass/warn/fail counts
-- **Cyan plethysmograph** — Health score
-- **Yellow respiratory** — Prescription count
+- Green ECG — Skills being scanned
+- Green capnography — Pass/warn/fail counts
+- Cyan plethysmograph — Health score
+- Yellow respiratory — Prescription count
 
 Disable with `--no-anim` or pipe to a file.
 
