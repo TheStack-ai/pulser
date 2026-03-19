@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>pulser — ESLint for Claude Code Skills</title>
+  <meta name="description" content="pulser checks Claude Code SKILL.md files against 8 diagnostic rules derived from Anthropic's published principles. Auto-classify, prescribe, fix, and undo.">
+  <meta property="og:title" content="pulser — Take Your Skill's Pulse">
+  <meta property="og:description" content="The diagnostic CLI for Claude Code skills. 8 rules, auto-classification, prescriptions, --fix, and undo.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://whynowlab.github.io/pulser/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="pulser — ESLint for Claude Code Skills">
+  <meta name="twitter:description" content="Diagnose and fix Claude Code skills with 8 rules derived from Anthropic's published principles.">
+  <link rel="canonical" href="https://whynowlab.github.io/pulser/">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "pulser",
+    "description": "Diagnostic CLI for Claude Code skills based on Anthropic's published principles",
+    "url": "https://github.com/whynowlab/pulser",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Windows, macOS, Linux",
+    "license": "https://opensource.org/licenses/MIT",
+    "author": { "@type": "Organization", "name": "whynowlab" }
+  }
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0a0f;
+      --bg2: #111118;
+      --green: #10b981;
+      --cyan: #06b6d4;
+      --yellow: #eab308;
+      --red: #ef4444;
+      --text: #e2e8f0;
+      --dim: #64748b;
+      --card: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.08);
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+    a { color: var(--green); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Waveform animation */
+    .wave-container {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      overflow: hidden;
+      opacity: 0.15;
+      pointer-events: none;
+    }
+    .wave-line {
+      position: absolute;
+      width: 200%;
+      height: 2px;
+      animation: waveSweep 4s linear infinite;
+    }
+    .wave-line:nth-child(1) { top: 25%; background: var(--green); animation-duration: 3.5s; }
+    .wave-line:nth-child(2) { top: 45%; background: var(--green); animation-duration: 4.2s; animation-delay: -1s; }
+    .wave-line:nth-child(3) { top: 65%; background: var(--cyan); animation-duration: 3.8s; animation-delay: -2s; }
+    .wave-line:nth-child(4) { top: 85%; background: var(--yellow); animation-duration: 4.5s; animation-delay: -0.5s; }
+    .wave-line::before {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: inherit;
+      clip-path: polygon(
+        0% 50%, 2% 50%, 3% 10%, 4% 90%, 5% 50%, 8% 50%,
+        10% 50%, 12% 50%, 13% 10%, 14% 90%, 15% 50%, 18% 50%,
+        20% 50%, 22% 50%, 23% 10%, 24% 90%, 25% 50%, 28% 50%,
+        30% 50%, 32% 50%, 33% 10%, 34% 90%, 35% 50%, 38% 50%,
+        40% 50%, 42% 50%, 43% 10%, 44% 90%, 45% 50%, 48% 50%,
+        50% 50%, 100% 50%
+      );
+      box-shadow: 0 0 8px currentColor;
+    }
+    @keyframes waveSweep {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    /* Layout */
+    .container { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+    section { padding: 80px 0; }
+
+    /* Hero */
+    .hero {
+      min-height: 90vh;
+      display: flex;
+      align-items: center;
+      position: relative;
+      padding: 120px 0 80px;
+    }
+    .hero-content { position: relative; z-index: 1; }
+    .badge {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--green);
+      border: 1px solid rgba(16,185,129,0.3);
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 24px;
+    }
+    h1 {
+      font-size: clamp(32px, 5vw, 56px);
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: 24px;
+    }
+    h1 .dim { color: var(--dim); }
+    .subtitle {
+      font-size: 18px;
+      color: var(--dim);
+      max-width: 560px;
+      margin-bottom: 40px;
+      line-height: 1.7;
+    }
+    .cta-group { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+    .cta-code {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 24px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 16px;
+      color: var(--green);
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .cta-code:hover { border-color: var(--green); }
+    .cta-secondary { color: var(--dim); font-size: 14px; }
+    .cta-secondary a { color: var(--text); }
+
+    /* Features */
+    .features { background: var(--bg2); }
+    .section-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--green);
+      margin-bottom: 12px;
+    }
+    h2 { font-size: 32px; margin-bottom: 48px; }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+    .feature-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+      transition: border-color 0.2s;
+    }
+    .feature-card:hover { border-color: rgba(16,185,129,0.3); }
+    .feature-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-bottom: 16px;
+    }
+    .feature-card h3 { font-size: 16px; margin-bottom: 8px; }
+    .feature-card p { font-size: 14px; color: var(--dim); line-height: 1.6; }
+
+    /* How it works */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 32px;
+      counter-reset: step;
+    }
+    .step { text-align: center; }
+    .step::before {
+      counter-increment: step;
+      content: counter(step);
+      display: inline-flex;
+      width: 36px;
+      height: 36px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: rgba(16,185,129,0.15);
+      color: var(--green);
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+    .step h3 { font-size: 14px; margin-bottom: 4px; }
+    .step p { font-size: 13px; color: var(--dim); }
+    .step code { font-size: 12px; color: var(--green); background: var(--bg2); padding: 2px 6px; border-radius: 4px; }
+
+    /* Terminal */
+    .terminal {
+      background: #000;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-top: 48px;
+      font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .terminal-bar {
+      background: #1a1a2e;
+      padding: 10px 16px;
+      display: flex;
+      gap: 8px;
+    }
+    .terminal-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .terminal-dot:nth-child(1) { background: #ef4444; }
+    .terminal-dot:nth-child(2) { background: #eab308; }
+    .terminal-dot:nth-child(3) { background: #10b981; }
+    .terminal-body { padding: 20px; color: #e2e8f0; white-space: pre; overflow-x: auto; }
+    .t-green { color: var(--green); }
+    .t-yellow { color: var(--yellow); }
+    .t-red { color: var(--red); }
+    .t-cyan { color: var(--cyan); }
+    .t-dim { color: #4a5568; }
+
+    /* CTA bottom */
+    .cta-section { text-align: center; }
+    .cta-section h2 { margin-bottom: 16px; }
+    .cta-section p { color: var(--dim); margin-bottom: 32px; }
+    .links { display: flex; gap: 24px; justify-content: center; margin-top: 24px; }
+    .links a {
+      color: var(--dim);
+      font-size: 14px;
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+    .links a:hover { color: var(--text); border-color: var(--green); text-decoration: none; }
+
+    /* Footer */
+    footer {
+      padding: 40px 0;
+      text-align: center;
+      color: var(--dim);
+      font-size: 13px;
+      border-top: 1px solid var(--border);
+    }
+
+    @media (max-width: 640px) {
+      section { padding: 48px 0; }
+      .hero { min-height: auto; padding: 80px 0 48px; }
+      .steps { grid-template-columns: 1fr 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .wave-line { animation: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="wave-container">
+      <div class="wave-line"></div>
+      <div class="wave-line"></div>
+      <div class="wave-line"></div>
+      <div class="wave-line"></div>
+    </div>
+    <div class="container hero-content">
+      <div class="badge">Open Source CLI</div>
+      <h1>Your Claude Code skills are running.<br><span class="dim">But are they healthy?</span></h1>
+      <p class="subtitle">Anthropic published 7 principles for great skills. They didn't build the enforcement tool. <strong>pulser</strong> did. 8 diagnostic rules, auto-classification, prescriptions, and safe fixes.</p>
+      <div class="cta-group">
+        <div class="cta-code" onclick="navigator.clipboard.writeText('npm install -g pulser-cli')">$ npm install -g pulser-cli</div>
+        <span class="cta-secondary">then run <code style="color:var(--green)">pulser</code> · <a href="https://github.com/whynowlab/pulser">GitHub</a></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="features">
+    <div class="container">
+      <div class="section-label">Features</div>
+      <h2>Diagnose. Prescribe. Fix.</h2>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="feature-icon" style="background:rgba(16,185,129,0.12)">📋</div>
+          <h3>8 diagnostic rules</h3>
+          <p>Frontmatter, description quality, file size, gotchas, allowed-tools, structure, conflicts, usage hooks — derived from Anthropic's published principles.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon" style="background:rgba(6,182,212,0.12)">🔬</div>
+          <h3>Auto-classifies skill type</h3>
+          <p>Analysis, research, generation, execution, or reference — with confidence scoring. Prescriptions are tailored to each type.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon" style="background:rgba(234,179,8,0.12)">💊</div>
+          <h3>Prescriptions, not just warnings</h3>
+          <p>Every issue comes with why it matters, what to add, and a ready-to-use template. Not "fix this" — "here's how and why."</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon" style="background:rgba(16,185,129,0.12)">🔧</div>
+          <h3>--fix + pulser undo</h3>
+          <p>Auto-apply safe structural fixes with full backup. Don't like the result? Roll back instantly.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon" style="background:rgba(239,68,68,0.12)">🫀</div>
+          <h3>Patient monitor TUI</h3>
+          <p>EtCO2-style waveform animation in your terminal. Watch your skills get diagnosed in real time.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon" style="background:rgba(6,182,212,0.12)">🤖</div>
+          <h3>Claude Code skill built-in</h3>
+          <p>Say "check my skills" or /pulser inside Claude Code. Claude runs the diagnosis and offers to fix issues conversationally.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section>
+    <div class="container">
+      <div class="section-label">How it works</div>
+      <h2>Five steps to healthy skills</h2>
+      <div class="steps">
+        <div class="step">
+          <h3>Install</h3>
+          <p><code>npm i -g pulser-cli</code></p>
+        </div>
+        <div class="step">
+          <h3>Run</h3>
+          <p><code>pulser</code></p>
+        </div>
+        <div class="step">
+          <h3>Diagnose</h3>
+          <p>8 rules scan your skills</p>
+        </div>
+        <div class="step">
+          <h3>Fix</h3>
+          <p><code>pulser --fix</code></p>
+        </div>
+        <div class="step">
+          <h3>Undo</h3>
+          <p><code>pulser undo</code></p>
+        </div>
+      </div>
+
+      <!-- Terminal demo -->
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="terminal-dot"></div>
+          <div class="terminal-dot"></div>
+          <div class="terminal-dot"></div>
+        </div>
+        <div class="terminal-body"><span class="t-dim">$</span> pulser
+
+  <span class="t-dim">pulser v0.3.1</span>
+
+  <span class="t-green">54</span> skills scanned
+  <span class="t-green">✓ 48 healthy</span>  <span class="t-yellow">⚠ 4 warnings</span>  <span class="t-red">✗ 2 errors</span>
+  Score: <span class="t-green">89</span>/100
+
+  <span class="t-dim">Top issues:</span>
+    cardnews <span class="t-dim">—</span> <span class="t-yellow">No Gotchas, no allowed-tools</span>
+    geo-audit <span class="t-dim">—</span> <span class="t-yellow">338 lines single file</span>
+
+  <span class="t-yellow">💊 Rx #1 — cardnews</span>
+  <span class="t-dim">[GOTCHAS]</span> Add Gotchas section
+  <span class="t-dim">  Why:</span> Anthropic's highest-ROI improvement
+  <span class="t-dim">  Suggestion:</span>
+  <span class="t-cyan">  ## Gotchas</span>
+  <span class="t-cyan">  1. Validate output against project conventions</span>
+  <span class="t-cyan">  2. Check scope — don't over-generate</span>
+
+  <span class="t-dim">Fix type:</span> <span class="t-green">AUTO</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <div class="container">
+      <h2>Run a full checkup in one command.</h2>
+      <p>Free · Open source · MIT</p>
+      <div class="cta-code" onclick="navigator.clipboard.writeText('npm install -g pulser-cli')" style="display:inline-block;font-size:18px;padding:16px 32px">$ npm install -g pulser-cli</div>
+      <div class="links">
+        <a href="https://github.com/whynowlab/pulser">GitHub</a>
+        <a href="https://www.npmjs.com/package/pulser-cli">npm</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="container">
+      MIT · <a href="https://github.com/whynowlab">whynowlab</a> · Built for people writing real Claude Code skills.
+    </div>
+  </footer>
+
+</body>
+</html>
