@@ -48,14 +48,15 @@ Pulser scans your `SKILL.md` files and checks them against **8 diagnostic rules*
 
 Each skill is **auto-classified** by type (analysis, research, generation, execution, reference) with confidence scoring, and prescriptions are tailored to the detected type.
 
-## Install & Run
+## Install
 
 ```bash
-# Run without installing
-npx pulser
+npm install -g pulser-cli
+```
 
-# Or install globally
-npm install -g pulser
+## Run
+
+```bash
 pulser
 ```
 
