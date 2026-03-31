@@ -1,4 +1,4 @@
-# pulser
+# pulser — SKILL.md Linter for Claude Code
 
 <p align="center">
   <img src="docs/banner.svg" alt="pulser — Diagnose. Prescribe. Fix." width="100%">
