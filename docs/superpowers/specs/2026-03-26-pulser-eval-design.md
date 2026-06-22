@@ -64,6 +64,8 @@ tests:
 |-----------|------|
 | `contains: "text"` | 출력에 해당 문자열 포함 |
 | `not-contains: "text"` | 출력에 해당 문자열 미포함 |
+| `starts-with: "text"` | 출력이 해당 문자열로 시작 |
+| `ends-with: "text"` | 출력이 해당 문자열로 종료 |
 | `min-length: N` | 출력 길이 N 이상 |
 | `max-length: N` | 출력 길이 N 이하 |
 | `matches: "regex"` | 정규식 매칭 |

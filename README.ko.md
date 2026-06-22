@@ -130,6 +130,7 @@ tests:
   - name: "버그 감지"
     input: "Review: function add(a,b) { return a - b }"
     assert:
+      - starts-with: "The bug"
       - contains: "subtract"
       - min-length: 30
 ```
@@ -146,7 +147,7 @@ $ pulser eval
   2 passed · 0 failed · 0.6s
 ```
 
-지원 assertions: `contains`, `not-contains`, `min-length`, `max-length`, `matches` (정규식).
+지원 assertions: `contains`, `not-contains`, `starts-with`, `ends-with`, `min-length`, `max-length`, `matches` (정규식).
 
 ### 종료 코드 (eval)
 

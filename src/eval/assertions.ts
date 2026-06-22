@@ -15,6 +15,14 @@ export function runAssertions(output: string, assertions: AssertionDef[]): Asser
       if (output.includes(assertion["not-contains"])) {
         return { passed: false, failureReason: `expected not-contains "${assertion["not-contains"]}", found in output` };
       }
+    } else if ("starts-with" in assertion) {
+      if (!output.startsWith(assertion["starts-with"])) {
+        return { passed: false, failureReason: `expected starts-with "${assertion["starts-with"]}"` };
+      }
+    } else if ("ends-with" in assertion) {
+      if (!output.endsWith(assertion["ends-with"])) {
+        return { passed: false, failureReason: `expected ends-with "${assertion["ends-with"]}"` };
+      }
     } else if ("min-length" in assertion) {
       if (output.length < assertion["min-length"]) {
         return { passed: false, failureReason: `expected min-length ${assertion["min-length"]}, got ${output.length}` };
