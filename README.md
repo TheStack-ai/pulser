@@ -132,6 +132,7 @@ tests:
   - name: "catches bugs"
     input: "Review: function add(a,b) { return a - b }"
     assert:
+      - starts-with: "The bug"
       - contains: "subtract"
       - min-length: 30
 ```
@@ -148,7 +149,7 @@ $ pulser eval
   2 passed · 0 failed · 0.6s
 ```
 
-Supported assertions: `contains`, `not-contains`, `min-length`, `max-length`, `matches` (regex).
+Supported assertions: `contains`, `not-contains`, `starts-with`, `ends-with`, `min-length`, `max-length`, `matches` (regex).
 
 ### Exit Codes (eval)
 

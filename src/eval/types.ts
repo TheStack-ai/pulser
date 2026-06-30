@@ -11,6 +11,8 @@ export interface TestCase {
 export type AssertionDef =
   | { contains: string }
   | { "not-contains": string }
+  | { "starts-with": string }
+  | { "ends-with": string }
   | { "min-length": number }
   | { "max-length": number }
   | { matches: string };
